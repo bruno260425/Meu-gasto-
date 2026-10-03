@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meu Gasto</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f5f7;color:#1d2329}
+.app{max-width:760px;margin:auto;padding:18px}
+header{background:#111827;color:white;border-radius:18px;padding:20px;margin-bottom:14px}
+h1{margin:0 0 5px;font-size:27px}.sub{opacity:.75;font-size:14px}
+.card{background:white;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #0000000c}
+.row{display:flex;gap:9px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+label{font-size:12px;font-weight:bold;color:#58616c;display:block;margin-bottom:5px}
+input,select,button{width:100%;padding:12px;border-radius:11px;border:1px solid #d7dce2;font-size:15px;background:white}
+button{border:0;background:#111827;color:white;font-weight:bold;cursor:pointer}
+button.secondary{background:#e9edf2;color:#20262d}.quick{background:#16a34a;font-size:17px;padding:14px}
+h2{font-size:17px;margin:0 0 12px}.big{font-size:31px;font-weight:800;margin:3px 0 10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:#f6f7f9;border-radius:12px;padding:11px}.stat small{display:block;color:#68717b;font-size:11px}.stat b{font-size:17px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #edf0f2}.item:last-child{border-bottom:0}
+.desc{font-weight:bold}.meta{font-size:12px;color:#737b84;margin-top:4px}.money{font-weight:800;white-space:nowrap}
+.actions button{width:auto;padding:7px 9px;margin-left:4px;font-size:12px}
+.day{padding:9px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between}
+.barwrap{margin:9px 0}.barline{display:flex;justify-content:space-between;font-size:12px}.bar{height:9px;background:#e7eaf0;border-radius:9px;overflow:hidden;margin-top:4px}.fill{height:100%;background:#111827;border-radius:9px}
+.warn{background:#fff4d6;border:1px solid #f0d58b;padding:11px;border-radius:11px;font-size:13px}.ok{background:#eaf8ef;border:1px solid #b9e4c5;padding:11px;border-radius:11px;font-size:13px}
+.empty{text-align:center;color:#7b838c;padding:20px 5px}
+footer{text-align:center;color:#858c94;font-size:11px;padding:8px}
+@media(max-width:520px){.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:span 2}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>💰 Meu Gasto</h1>
+  <div class="sub">Controle simples dos seus gastos</div>
+</header>
+
+<div class="card">
+  <h2>📅 Mês</h2>
+  <div class="row">
+    <input id="month" type="month">
+    <button class="secondary" onclick="goToday()">Mês atual</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>⚡ Lançamento rápido</h2>
+  <div class="row">
+    <input id="quickDesc" placeholder="Ex.: Coxinha">
+    <input id="quickValue" type="number" step="0.01" min="0" placeholder="R$ 2,50">
+  </div>
+  <div style="margin-top:9px"><button class="quick" onclick="quickAdd()">+ ADICIONAR GASTO</button></div>
+  <div class="row" style="margin-top:9px">
+    <select id="quickCat">
+      <option>Alimentação</option><option>Transporte</option><option>Casa</option>
+      <option>Contas</option><option>Lazer</option><option>Saúde</option><option>Outros</option>
+    </select>
+    <input id="quickDate" type="date">
+  </div>
+</div>
+
+<div class="card">
+  <h2>🎯 Limite do mês</h2>
+  <div class="row">
+    <input id="limit" type="number" step="0.01" min="0" placeholder="Ex.: 2000">
+    <button onclick="saveLimit()">Salvar limite</button>
+  </div>
+  <div id="limitStatus" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+  <h2>📊 Resumo do mês</h2>
+  <div class="big" id="monthTotal">R$ 0,00</div>
+  <div class="stats">
+    <div class="stat"><small>Lançamentos</small><b id="count">0</b></div>
+    <div class="stat"><small>Maior gasto</small><b id="largest">R$ 0,00</b></div>
+    <div class="stat"><small>Média</small><b id="average">R$ 0,00</b></div>
+    <div class="stat"><small>Alimentação</small><b id="food">R$ 0,00</b></div>
+    <div class="stat"><small>Outras categorias</small><b id="other">R$ 0,00</b></div>
+    <div class="stat"><small>Restante</small><b id="remaining">—</b></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔎 Procurar gasto</h2>
+  <input id="search" placeholder="Digite: coxinha, gasolina, mercado..." oninput="render()">
+  <div id="searchResult" style="margin-top:9px"></div>
+</div>
+
+<div class="card">
+  <h2>📈 Gastos por categoria</h2>
+  <div id="categories"></div>
+</div>
+
+<div class="card">
+  <h2>📆 Resumo por dia</h2>
+  <div id="days"></div>
+</div>
+
+<div class="card">
+  <h2>🧾 Gastos do mês</h2>
+  <div id="list"></div>
+</div>
+
+<div class="card">
+  <h2>🔒 Fechamento do mês</h2>
+  <div id="closing"></div>
+</div>
+
+<footer>Os dados ficam salvos neste aparelho. Protótipo do Meu Gasto.</footer>
+</div>
+
+<script>
+const KEY='meu_gasto_v1';
+const LIMIT_KEY='meu_gasto_limit_v1';
+let expenses=JSON.parse(localStorage.getItem(KEY)||'[]');
+let limits=JSON.parse(localStorage.getItem(LIMIT_KEY)||'{}');
+
+const cats=['Alimentação','Transporte','Casa','Contas','Lazer','Saúde','Outros'];
+const money=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const today=()=>new Date().toISOString().slice(0,10);
+const monthNow=()=>new Date().toISOString().slice(0,7);
+const selectedMonth=()=>document.getElementById('month').value||monthNow();
+
+function save(){localStorage.setItem(KEY,JSON.stringify(expenses))}
+function saveLimits(){localStorage.setItem(LIMIT_KEY,JSON.stringify(limits))}
+function goToday(){document.getElementById('month').value=monthNow();render()}
+function fmtDate(s){if(!s)return '';let [y,m,d]=s.split('-');return `${d}/${m}/${y}`}
+function monthExpenses(){
+  const m=selectedMonth();
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  return expenses.filter(e=>e.date.startsWith(m) && (!q || (e.desc+' '+e.cat).toLowerCase().includes(q)))
+    .sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+}
+
+function quickAdd(){
+  const desc=document.getElementById('quickDesc').value.trim();
+  const value=parseFloat(document.getElementById('quickValue').value);
+  const date=document.getElementById('quickDate').value||today();
+  const cat=document.getElementById('quickCat').value;
+  if(!desc || !(value>0)){alert('Digite a descrição e um valor maior que zero.');return}
+  expenses.push({id:Date.now(),desc,value,date,cat});
+  save();
+  document.getElementById('quickDesc').value='';
+  document.getElementById('quickValue').value='';
+  document.getElementById('month').value=date.slice(0,7);
+  render();
+  document.getElementById('quickDesc').focus();
+}
+function saveLimit(){
+  const m=selectedMonth(), v=parseFloat(document.getElementById('limit').value);
+  if(!(v>0)){delete limits[m]} else limits[m]=v;
+  saveLimits();render();
+}
+function editExpense(id){
+  const e=expenses.find(x=>x.id===id); if(!e)return;
+  const d=prompt('Descrição:',e.desc); if(d===null)return;
+  const v=parseFloat(prompt('Valor:',e.value)); if(!(v>0)){alert('Valor inválido.');return}
+  const c=prompt('Categoria: Alimentação, Transporte, Casa, Contas, Lazer, Saúde ou Outros',e.cat)||e.cat;
+  e.desc=d.trim()||e.desc;e.value=v;e.cat=c;save();render();
+}
+function deleteExpense(id){
+  if(confirm('Excluir este gasto?')){expenses=expenses.filter(e=>e.id!==id);save();render()}
+}
+
+function render(){
+  const all=monthExpenses();
+  const base=expenses.filter(e=>e.date.startsWith(selectedMonth()));
+  const total=base.reduce((s,e)=>s+Number(e.value),0);
+  const count=base.length;
+  const largest=base.reduce((m,e)=>Math.max(m,Number(e.value)),0);
+  const avg=count?total/count:0;
+  const food=base.filter(e=>e.cat==='Alimentação').reduce((s,e)=>s+Number(e.value),0);
+  const other=total-food;
+  document.getElementById('monthTotal').textContent=money(total);
+  document.getElementById('count').textContent=count;
+  document.getElementById('largest').textContent=money(largest);
+  document.getElementById('average').textContent=money(avg);
+  document.getElementById('food').textContent=money(food);
+  document.getElementById('other').textContent=money(other);
+
+  const lim=Number(limits[selectedMonth()]||0);
+  document.getElementById('limit').value=lim||'';
+  const rem=lim-total;
+  document.getElementById('remaining').textContent=lim?money(rem):'—';
+  document.getElementById('limitStatus').innerHTML=lim
+    ? (rem>=0 ? `<div class="ok">Você ainda tem <b>${money(rem)}</b> disponíveis neste mês.</div>`
+              : `<div class="warn">⚠️ Você passou do limite em <b>${money(Math.abs(rem))}</b>.</div>`)
+    : '<div style="font-size:12px;color:#777">Defina um limite para acompanhar quanto ainda pode gastar.</div>';
+
+  renderSearch(base);
+  renderCategories(base,total);
+  renderDays(base);
+  renderList(all);
+  renderClosing(base,total);
+}
+
+function renderSearch(base){
+  const q=document.getElementById('search').value.trim();
+  const box=document.getElementById('searchResult');
+  if(!q){box.innerHTML='';return}
+  const found=base.filter(e=>(e.desc+' '+e.cat).toLowerCase().includes(q.toLowerCase()));
+  const t=found.reduce((s,e)=>s+Number(e.value),0);
+  box.innerHTML=found.length
+    ? `<div style="font-size:13px"><b>${found.length}</b> gasto(s) encontrado(s): <b>${money(t)}</b></div>`
+    : '<div style="font-size:13px;color:#777">Nenhum gasto encontrado.</div>';
+}
+
+function renderCategories(base,total){
+  const sums={};cats.forEach(c=>sums[c]=0);
+  base.forEach(e=>sums[e.cat]=(sums[e.cat]||0)+Number(e.value));
+  const arr=Object.entries(sums).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('categories').innerHTML=arr.length?arr.map(([c,v])=>{
+    const pct=total?v/total*100:0;
+    return `<div class="barwrap"><div class="barline"><span>${esc(c)}</span><b>${money(v)} · ${pct.toFixed(0)}%</b></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div></div>`
+  }).join(''):'<div class="empty">Ainda não há gastos neste mês.</div>';
+}
+
+function renderDays(base){
+  const sums={};
+  base.forEach(e=>sums[e.date]=(sums[e.date]||0)+Number(e.value));
+  const arr=Object.entries(sums).sort((a,b)=>b[0].localeCompare(a[0]));
+  document.getElementById('days').innerHTML=arr.length?arr.map(([d,v])=>`<div class="day"><span>${fmtDate(d)}</span><b>${money(v)}</b></div>`).join(''):'<div class="empty">Nenhum gasto lançado.</div>';
+}
+
+function renderList(all){
+  document.getElementById('list').innerHTML=all.length?all.map(e=>`
+  <div class="item">
+    <div><div class="desc">${esc(e.desc)}</div><div class="meta">${fmtDate(e.date)} · ${esc(e.cat)}</div></div>
+    <div style="text-align:right"><div class="money">${money(e.value)}</div><div class="actions"><button class="secondary" onclick="editExpense(${e.id})">Editar</button><button class="secondary" onclick="deleteExpense(${e.id})">Excluir</button></div></div>
+  </div>`).join(''):'<div class="empty">Nenhum gasto neste mês.</div>';
+}
+
+function renderClosing(base,total){
+  const byCat={};base.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+Number(e.value));
+  const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+  const max=base.slice().sort((a,b)=>b.value-a.value)[0];
+  const avg=base.length?total/base.length:0;
+  document.getElementById('closing').innerHTML=base.length?`
+    <div style="font-size:14px;line-height:1.8">
+      <b>Mês:</b> ${selectedMonth().split('-').reverse().join('/')}<br>
+      <b>Total gasto:</b> ${money(total)}<br>
+      <b>Quantidade de gastos:</b> ${base.length}<br>
+      <b>Maior gasto:</b> ${esc(max.desc)} — ${money(max.value)}<br>
+      <b>Categoria com maior gasto:</b> ${esc(top[0])} — ${money(top[1])}<br>
+      <b>Média por lançamento:</b> ${money(avg)}
+    </div>`:'<div class="empty">O fechamento aparecerá quando você lançar gastos.</div>';
+}
+
+document.getElementById('month').value=monthNow();
+document.getElementById('quickDate').value=today();
+document.getElementById('month').addEventListener('change',render);
+render();
+</script>
+</body>
+</html>
